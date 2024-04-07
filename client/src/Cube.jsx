@@ -1,13 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-function Brain() {
+function Cube() {
     const mountRef = useRef(null);
     const sceneRef = useRef(null);
     const cameraRef = useRef(null);
     const rendererRef = useRef(null);
-    const raycasterRef = useRef(new THREE.Raycaster());
-    const mouseRef = useRef(new THREE.Vector2());
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -20,10 +19,20 @@ function Brain() {
         sceneRef.current = scene;
         cameraRef.current = camera;
 
-        const brainGeometry = new THREE.SphereGeometry(1, 32, 32);
-        const brainMaterial = new THREE.MeshBasicMaterial({ color: 0x8844ff, wireframe: true });
-        const brainMesh = new THREE.Mesh(brainGeometry, brainMaterial);
-        scene.add(brainMesh);
+        // Load GLB model
+        const loader = new GLTFLoader();
+        loader.load(
+            'thorax_and_abdomen_some_arteries_and_veins.glb', // Utilisez simplement le nom du fichier GLB
+            function (gltf) {
+                scene.add(gltf.scene);
+            },
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+            },
+            function (error) {
+                console.error('An error happened', error);
+            }
+        );
 
         // Position de la caméra
         camera.position.z = 5;
@@ -31,9 +40,6 @@ function Brain() {
         // Fonction d'animation
         const animate = function () {
             requestAnimationFrame(animate);
-
-            brainMesh.rotation.y += 0.01;
-
             renderer.render(scene, camera);
         };
 
@@ -47,28 +53,10 @@ function Brain() {
             camera.updateProjectionMatrix();
         };
 
-        const handleMouseClick = (event) => {
-            const rect = mountRef.current.getBoundingClientRect();
-            mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-            const intersects = raycasterRef.current.intersectObject(brainMesh);
-
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                const newPosition = intersect.point.clone().multiplyScalar(1.1);
-                cameraRef.current.position.lerp(newPosition, 0.3);
-                cameraRef.current.lookAt(intersect.point);
-            }
-        };
-
         window.addEventListener('resize', handleResize);
-        window.addEventListener('click', handleMouseClick);
 
         return () => {
             window.removeEventListener('resize', handleResize);
-            window.removeEventListener('click', handleMouseClick);
             mountRef.current.removeChild(renderer.domElement);
         };
     }, []);
@@ -76,4 +64,4 @@ function Brain() {
     return <div ref={mountRef}></div>;
 }
 
-export default Brain;
+export default Cube;
