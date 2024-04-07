@@ -1,49 +1,54 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 
-function Cube() {
+function Brain() {
     const mountRef = useRef(null);
-    const cubeRef = useRef(null);
-    const mouseRef = useRef({ x: 0, y: 0 });
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
+    const rendererRef = useRef(null);
 
     useEffect(() => {
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        rendererRef.current = renderer;
+
         mountRef.current.appendChild(renderer.domElement);
+        sceneRef.current = scene;
+        cameraRef.current = camera;
 
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: "white" });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-        cubeRef.current = cube;
+        const brainGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const brainMaterial = new THREE.MeshBasicMaterial({ color: 0x8844ff, wireframe: true });
+        const brainMesh = new THREE.Mesh(brainGeometry, brainMaterial);
+        scene.add(brainMesh);
 
+        // Position de la caméra
         camera.position.z = 5;
 
+        // Fonction d'animation
         const animate = function () {
             requestAnimationFrame(animate);
+
+            brainMesh.rotation.y += 0.01;
 
             renderer.render(scene, camera);
         };
 
         animate();
 
-        const handleMouseMove = (event) => {
-            const { clientX, clientY } = event;
-            const { innerWidth, innerHeight } = window;
-            mouseRef.current.x = (clientX / innerWidth) * 2 - 1;
-            mouseRef.current.y = -(clientY / innerHeight) * 2 + 1;
-
-            const { x, y } = mouseRef.current;
-            cubeRef.current.rotation.x = y * 0.5;
-            cubeRef.current.rotation.y = x * 0.5;
+        const handleResize = () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-
+        window.addEventListener('resize', handleResize);
+        
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('resize', handleResize);
             mountRef.current.removeChild(renderer.domElement);
         };
     }, []);
@@ -51,4 +56,4 @@ function Cube() {
     return <div ref={mountRef}></div>;
 }
 
-export default Cube;
+export default Brain;
