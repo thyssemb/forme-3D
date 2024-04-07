@@ -6,6 +6,8 @@ function Brain() {
     const sceneRef = useRef(null);
     const cameraRef = useRef(null);
     const rendererRef = useRef(null);
+    const raycasterRef = useRef(new THREE.Raycaster());
+    const mouseRef = useRef(new THREE.Vector2());
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -45,10 +47,28 @@ function Brain() {
             camera.updateProjectionMatrix();
         };
 
+        const handleMouseClick = (event) => {
+            const rect = mountRef.current.getBoundingClientRect();
+            mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+            const intersects = raycasterRef.current.intersectObject(brainMesh);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const newPosition = intersect.point.clone().multiplyScalar(1.1);
+                cameraRef.current.position.lerp(newPosition, 0.3);
+                cameraRef.current.lookAt(intersect.point);
+            }
+        };
+
         window.addEventListener('resize', handleResize);
-        
+        window.addEventListener('click', handleMouseClick);
+
         return () => {
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('click', handleMouseClick);
             mountRef.current.removeChild(renderer.domElement);
         };
     }, []);
